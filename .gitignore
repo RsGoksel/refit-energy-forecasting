@@ -1,0 +1,45 @@
+# Data files (too large for git, download separately)
+data/
+archive.zip
+uk-electrical-load-metadata.json
+*.csv.gz
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# OS
+Thumbs.db
+desktop.ini
+
+# Internal planning / superseded archives
+docs/superpowers/
+Project_Proposal_Report.docx
+Project_Proposal_Report.md
+generate_docx.py
+Task.txt
+Article.pdf
+
+# Logs and temporary
+*.log
+*.tmp
