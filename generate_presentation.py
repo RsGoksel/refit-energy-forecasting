@@ -180,6 +180,16 @@ add_title_content_slide(
     ],
 )
 
+add_title_content_slide(
+    "Persistence Baseline as Sanity Check",
+    [
+        "One-line rule: predict y[t] = y[t-1] (yesterday equals today).",
+        "Zero learned parameters, runs in microseconds.",
+        "Canonical sanity check: any model that cannot beat this learned nothing.",
+        "Runs under the same rolling protocol as ARIMA and LSTM.",
+    ],
+)
+
 add_title_image_slide(
     "LSTM Architecture",
     "lstm_architecture.png",
@@ -199,24 +209,38 @@ add_title_image_slide(
 )
 
 add_table_slide(
-    "Final Performance",
+    "Final Performance, House 2",
     ["Model", "MSE", "RMSE (W)", "MAE (W)", "R2"],
     [
-        ["ARIMA(2,1,2)", "2,370.01", "48.68", "32.75", "0.876"],
-        ["LSTM (3-layer)", "15,436.04", "124.24", "93.59", "0.193"],
-        ["FB-Prophet", "18,851.52", "137.30", "111.70", "0.015"],
+        ["Persistence",   "2,426.76",  "49.26",  "33.51",  "0.873"],
+        ["ARIMA(2,1,2)",  "2,370.01",  "48.68",  "32.75",  "0.876"],
+        ["LSTM (3-layer)", "4,821.35", "69.44",  "52.25",  "0.748"],
+        ["FB-Prophet",    "18,851.52", "137.30", "111.70", "0.015"],
     ],
 )
 
 add_title_image_slide(
     "Predicted vs Actual",
     "model_comparison.png",
-    "ARIMA tracks closely, LSTM smooths peaks, Prophet captures only the baseline.",
+    "ARIMA tracks closely, LSTM smooths peaks, Prophet only captures the baseline.",
 )
 
 add_title_image_slide(
     "Metrics Side by Side",
     "metrics_comparison.png",
+    "Persistence and ARIMA are nearly indistinguishable; LSTM and Prophet trail behind.",
+)
+
+add_title_image_slide(
+    "KEY FINDING: Statistical Significance (Diebold-Mariano)",
+    "dm_test_plot.png",
+    "ARIMA vs Persistence: p=0.665 (NOT significant). LSTM and Prophet lose to Persistence.",
+)
+
+add_title_image_slide(
+    "Cross-House Validation, R2 by Model",
+    "cross_house_comparison.png",
+    "Three houses (1, 2, 5). ARIMA wins narrowly on all; LSTM below Persistence on all; Prophet often negative.",
 )
 
 add_title_image_slide(
@@ -228,21 +252,21 @@ add_title_image_slide(
 add_title_content_slide(
     "Discussion",
     [
-        "ARIMA wins: strong lag-1 autocorrelation + rolling refit.",
-        "LSTM underperforms: only 476 training sequences, data-scale bound.",
-        "Prophet looks worst: unfair multi-step protocol, no test access.",
-        "Hybrid models (CNN-LSTM-Transformer, STL-Prophet-LSTM) are the natural next step.",
+        "ARIMA wins, but barely: edge over Persistence is 0.003 R2 and NOT significant (p=0.665).",
+        "Lag-1 autocorrelation is doing 99% of the work. Heavier models add nothing here.",
+        "LSTM and Prophet both significantly WORSE than Persistence on all three houses.",
+        "Practical cost: ARIMA RMSE = 48.7 W (~11.2% of mean) = ~1.17 kWh/day on House 2.",
     ],
 )
 
 add_title_content_slide(
     "Conclusion and Future Work",
     [
-        "Rolling protocol is the single most impactful design choice.",
-        "Classical statistics stay competitive at single-household daily granularity.",
-        "Future: weather + calendar features via SARIMAX / multivariate LSTM.",
-        "Future: cross-household transfer learning across all 20 REFIT homes.",
-        "Future: rolling refit Prophet for a fair multi-step comparison.",
+        "Smoothed daily residential energy is dominated by lag-1 autocorrelation.",
+        "A one-line rule (Persistence) captures almost all of the predictable structure.",
+        "Methodological lesson: always report a baseline + significance test.",
+        "Future: hourly target (where lag-1 is weaker) + weather/calendar features.",
+        "Future: hybrid models (STL-Prophet-LSTM, CNN-LSTM-Transformer).",
     ],
 )
 

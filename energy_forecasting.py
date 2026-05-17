@@ -207,6 +207,78 @@ def evaluate_model(y_true, y_pred, model_name: str) -> dict:
 
 
 # ============================================================
+# 4b. PERSISTENCE BASELINE (naive forecast: y_hat[t] = y_actual[t-1])
+# ============================================================
+def run_persistence(train: pd.Series, test: pd.Series) -> tuple:
+    """Naive baseline: predict today equals yesterday's actual.
+
+    This is the canonical sanity-check baseline for time-series forecasting.
+    If a more complex model cannot beat this, it has learned nothing useful.
+    """
+    print("\n" + "=" * 60)
+    print("PERSISTENCE BASELINE (predict y[t] = y[t-1])")
+    print("=" * 60)
+
+    # First test prediction uses last training value, then each test
+    # prediction uses the previous actual test value.
+    history_last = train.values[-1]
+    predictions = np.empty(len(test))
+    predictions[0] = history_last
+    predictions[1:] = test.values[:-1]
+
+    metrics = evaluate_model(test.values, predictions, "Persistence")
+    return predictions, metrics
+
+
+# ============================================================
+# 4c. DIEBOLD-MARIANO TEST (forecast accuracy significance)
+# ============================================================
+def diebold_mariano_test(actual, pred1, pred2, h: int = 1) -> dict:
+    """Diebold-Mariano test for equal predictive accuracy.
+
+    H0: forecasts from model 1 and model 2 have equal squared-error loss.
+    Negative DM statistic favours model 1 (lower errors); positive favours model 2.
+
+    Returns the test statistic and a two-sided p-value.
+    Implementation follows Diebold and Mariano (1995) with the
+    Harvey, Leybourne, Newbold (1997) small-sample correction.
+    """
+    from scipy.stats import t as t_dist
+
+    actual = np.asarray(actual, dtype=float).flatten()
+    pred1 = np.asarray(pred1, dtype=float).flatten()
+    pred2 = np.asarray(pred2, dtype=float).flatten()
+
+    n = min(len(actual), len(pred1), len(pred2))
+    actual, pred1, pred2 = actual[:n], pred1[:n], pred2[:n]
+
+    e1 = actual - pred1
+    e2 = actual - pred2
+    d = e1 ** 2 - e2 ** 2  # squared-error loss differential
+
+    mean_d = float(np.mean(d))
+    # Newey-West style HAC variance with lag = h - 1 (h=1 means use sample variance)
+    gamma0 = float(np.var(d, ddof=0))
+    var_d = gamma0
+    for k in range(1, h):
+        gamma_k = float(np.mean((d[k:] - mean_d) * (d[:-k] - mean_d)))
+        var_d += 2 * (1 - k / h) * gamma_k
+
+    if var_d <= 0 or n < 3:
+        return {"DM": float("nan"), "p_value": float("nan"), "n": n}
+
+    dm_stat = mean_d / np.sqrt(var_d / n)
+    # Harvey, Leybourne, Newbold (1997) small-sample correction
+    correction = np.sqrt((n + 1 - 2 * h + h * (h - 1) / n) / n)
+    dm_stat_hln = dm_stat * correction
+
+    # Two-sided p-value using Student t with n-1 dof
+    p_value = 2 * (1 - t_dist.cdf(abs(dm_stat_hln), df=n - 1))
+
+    return {"DM": float(dm_stat_hln), "p_value": float(p_value), "n": n}
+
+
+# ============================================================
 # 5. ARIMA MODEL
 # ============================================================
 def run_arima(train: pd.Series, test: pd.Series) -> tuple:
@@ -523,7 +595,7 @@ def plot_metrics_comparison(all_metrics: list):
     metrics_df = metrics_df.set_index('Model')
 
     fig, axes = plt.subplots(1, 4, figsize=(18, 5))
-    colors = ['#e74c3c', '#3498db', '#2ecc71']
+    colors = ['#888888', '#e74c3c', '#9b59b6', '#2ecc71']
 
     for i, metric in enumerate(['MSE', 'RMSE', 'MAE', 'R²']):
         bars = axes[i].bar(metrics_df.index, metrics_df[metric], color=colors, edgecolor='white')
@@ -583,6 +655,10 @@ def main():
     print("\n[6/8] Training models...")
     all_metrics = []
 
+    # Persistence baseline
+    persistence_pred, persistence_metrics = run_persistence(train_series, test_series)
+    all_metrics.append(persistence_metrics)
+
     # ARIMA
     arima_pred, arima_metrics = run_arima(train_series, test_series)
     all_metrics.append(arima_metrics)
@@ -595,6 +671,41 @@ def main():
     prophet_pred, prophet_metrics = run_prophet(train_series, test_series)
     all_metrics.append(prophet_metrics)
 
+    # Step 6b: Diebold-Mariano significance tests
+    print("\n[6b/8] Diebold-Mariano tests (squared-error loss, two-sided)...")
+    test_arr = test_series.values
+    n_test = len(test_arr)
+    dm_results = []
+    pairs = [
+        ("ARIMA", arima_pred, "Persistence", persistence_pred),
+        ("LSTM", lstm_pred[:n_test], "Persistence", persistence_pred[-len(lstm_pred):][:n_test]
+         if len(lstm_pred) < n_test else persistence_pred),
+        ("Prophet", prophet_pred, "Persistence", persistence_pred),
+        ("ARIMA", arima_pred, "LSTM", lstm_pred[:n_test] if len(lstm_pred) >= n_test else None),
+        ("ARIMA", arima_pred, "Prophet", prophet_pred),
+    ]
+    for name1, p1, name2, p2 in pairs:
+        if p2 is None or len(p1) != len(p2):
+            min_n = min(len(p1), len(p2)) if p2 is not None else 0
+            if min_n < 3:
+                print(f"  Skipped {name1} vs {name2}: length mismatch")
+                continue
+            actual_use = test_arr[:min_n]
+            p1, p2 = p1[:min_n], p2[:min_n]
+        else:
+            actual_use = test_arr[:len(p1)]
+        result = diebold_mariano_test(actual_use, p1, p2)
+        result["model_1"] = name1
+        result["model_2"] = name2
+        dm_results.append(result)
+        sig = "***" if result["p_value"] < 0.01 else ("**" if result["p_value"] < 0.05
+              else ("*" if result["p_value"] < 0.10 else "n.s."))
+        better = name1 if result["DM"] < 0 else name2
+        print(f"  {name1:>11} vs {name2:<11}: DM = {result['DM']:>7.3f}, "
+              f"p = {result['p_value']:.4f} {sig:>4}  -> {better} has lower error")
+    # Save DM table
+    pd.DataFrame(dm_results).to_csv(os.path.join(RESULTS_DIR, "dm_test_results.csv"), index=False)
+
     # Step 7: Visualize comparison
     print("\n[7/8] Generating comparison plots...")
     plot_model_comparison(
@@ -606,9 +717,21 @@ def main():
     print("\n[8/8] Metrics summary...")
     plot_metrics_comparison(all_metrics)
 
+    # Practical interpretation (cost / accuracy in domain units)
+    mean_consumption = float(test_series.mean())
+    arima_rmse = arima_metrics["RMSE"]
+    rmse_pct = 100 * arima_rmse / mean_consumption if mean_consumption > 0 else float("nan")
+    daily_kwh_error = arima_rmse * 24 / 1000  # 1 day of avg-power error -> kWh
+    print(f"\nPractical interpretation (ARIMA, House {HOUSE_ID}):")
+    print(f"  Mean daily test consumption: {mean_consumption:.1f} W")
+    print(f"  ARIMA RMSE: {arima_rmse:.2f} W  ({rmse_pct:.1f}% of mean)")
+    print(f"  Equivalent daily energy error: ~{daily_kwh_error:.2f} kWh/day")
+
     print("\n" + "=" * 60)
     print("DONE! All results saved to:", RESULTS_DIR)
     print("=" * 60)
+
+    return all_metrics, dm_results, mean_consumption
 
 
 if __name__ == "__main__":

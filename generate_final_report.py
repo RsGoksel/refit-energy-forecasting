@@ -193,23 +193,25 @@ doc.add_page_break()
 # ============================================================
 add_heading("Abstract", level=1)
 add_para(
-    "This report presents a comparative study of three time series forecasting models, ARIMA, "
-    "Long Short-Term Memory (LSTM), and FB-Prophet, applied to household energy consumption data "
-    "from the REFIT Smart Home dataset. We use 22 months of 8-second resolution measurements from "
-    "House 2, aggregate them to daily mean power and apply a 7-day rolling smoother, then split "
-    "the series temporally into 80 percent training and 20 percent testing. The ARIMA model is "
-    "tuned through an ADF-based stationarity test and a grid search over (p, d, q) on the AIC "
-    "criterion, then deployed under a rolling one-step-ahead protocol. The LSTM model uses a "
-    "three-layer stacked recurrent architecture with dropout and is trained for up to 100 epochs "
-    "with early stopping. Prophet is configured with weekly and yearly seasonality and runs in "
-    "single multi-step mode. ARIMA reaches the best accuracy (R2 = 0.876, RMSE = 48.7 W), "
-    "followed by LSTM (R2 = 0.193) and Prophet (R2 = 0.015). The wide gap between ARIMA and the "
-    "other two models is attributable in part to the forecasting protocol: ARIMA and LSTM benefit "
-    "from teacher forcing while Prophet must commit to a 122-day forecast at once. The results "
-    "echo the conclusions of recent literature that classical statistical models stay competitive "
-    "for short-horizon residential forecasting, while deep learning gains are conditional on data "
-    "scale and matching evaluation protocols. The full code base, with fixed random seed and "
-    "reproducible pipeline, is provided alongside this report."
+    "This report presents a comparative study of four time series forecasting approaches, "
+    "applied to household energy consumption data from the REFIT Smart Home dataset. We use 22 "
+    "months of 8-second resolution measurements from three UK households (Houses 1, 2, and 5), "
+    "aggregate them to daily mean power and apply a 7-day rolling smoother, then split each "
+    "series temporally into 80 percent training and 20 percent testing. Alongside the three "
+    "candidate models, ARIMA, Long Short-Term Memory (LSTM), and FB-Prophet, we include a "
+    "persistence baseline (y_hat[t] = y[t-1]) as a sanity check. ARIMA is tuned through an ADF-"
+    "based stationarity test and an AIC grid search, then run under a rolling one-step-ahead "
+    "protocol; LSTM uses a three-layer stacked recurrent architecture; Prophet uses weekly and "
+    "yearly seasonality in single multi-step mode. On House 2, ARIMA(2, 1, 2) reaches R2 = 0.876 "
+    "and RMSE = 48.7 W, but a Diebold-Mariano test shows its edge over the persistence baseline "
+    "(R2 = 0.873) is not statistically significant (p = 0.665). LSTM (R2 = 0.748) and Prophet "
+    "(R2 = 0.015) lose significantly to persistence (p < 0.001 in both cases). The same pattern "
+    "holds on House 1 and House 5: ARIMA narrowly wins, but adds little over persistence, while "
+    "LSTM and Prophet underperform the baseline. The headline lesson is that smoothed daily "
+    "residential consumption is dominated by lag-1 autocorrelation, so a one-line rule captures "
+    "almost all of the predictable structure. Heavier machinery is justified only when stronger "
+    "exogenous inputs or finer-grained targets break that autocorrelation. The full code base, "
+    "with fixed random seed and reproducible pipeline, is provided alongside this report."
 )
 
 doc.add_page_break()
@@ -389,7 +391,18 @@ add_figure("rolling_forecast.png",
            "commit to the entire test horizon based on training data only.",
            width=Inches(6.3))
 
-add_heading("3.5 Evaluation Metrics", level=2)
+add_heading("3.5 Persistence Baseline", level=2)
+add_para(
+    "Before claiming that a complex model is useful, we must show that it beats the simplest "
+    "possible alternative. We therefore include a persistence baseline that predicts the next day "
+    "to equal the previous day's actual value (y_hat[t] = y[t-1]). This is the canonical sanity "
+    "check for time series forecasting. Any model that cannot beat persistence has learned "
+    "nothing beyond what a one-line rule already captures. Persistence runs under the same "
+    "rolling protocol as ARIMA and LSTM: the previous actual day is always available when "
+    "predicting the next."
+)
+
+add_heading("3.6 Evaluation Metrics", level=2)
 add_para(
     "Predictive accuracy is measured with four complementary metrics. Mean Squared Error (MSE) "
     "and Root Mean Squared Error (RMSE) penalise large errors heavily and report in the original "
@@ -397,6 +410,15 @@ add_para(
     "expressed in Watts. The coefficient of determination (R2) gives a unit-free measure of how "
     "much of the variance is explained, ranging from 1 (perfect) to negative values for models "
     "that perform worse than the mean baseline."
+)
+
+add_heading("3.7 Statistical Significance via Diebold-Mariano Test", level=2)
+add_para(
+    "Point estimates of RMSE or R2 can hide whether one model is genuinely better than another. "
+    "We use the Diebold-Mariano (DM) test of equal predictive accuracy with the Harvey-Leybourne-"
+    "Newbold small-sample correction. The null hypothesis is that two competing models have the "
+    "same expected squared-error loss; a negative DM statistic favours the first model, positive "
+    "the second. We report two-sided p-values for all pairwise comparisons of interest."
 )
 
 doc.add_page_break()
@@ -436,21 +458,26 @@ add_heading("5. Results", level=1)
 
 add_heading("5.1 Final Performance Comparison", level=2)
 add_para(
-    "Table 1 reports the test-set metrics for all three models. ARIMA is the clear winner across "
-    "all four metrics, with an R2 of 0.876, roughly four times that of LSTM and sixty times that "
-    "of Prophet. The RMSE gap is even more striking: ARIMA at 48.7 W versus 124.2 W for LSTM and "
-    "137.3 W for Prophet."
+    "Table 1 reports the test-set metrics for the persistence baseline and the three models on "
+    "House 2. The headline result is that ARIMA(2, 1, 2) is the winner with R2 = 0.876, but its "
+    "edge over the trivial persistence baseline (R2 = 0.873) is razor-thin. LSTM (R2 = 0.748) and "
+    "FB-Prophet (R2 = 0.015) both fall meaningfully below persistence. The implication, which we "
+    "examine in detail in Section 5.5 with the Diebold-Mariano test, is that the lag-1 "
+    "autocorrelation in daily residential energy is doing almost all of the predictive work; "
+    "ARIMA captures it more cleanly, while LSTM and Prophet fail to recover it."
 )
 
-add_table_caption("Table 1. Test set performance of the three models on House 2 daily forecasts.")
+add_table_caption("Table 1. Test set performance on House 2 daily forecasts, including the "
+                  "persistence baseline (y_hat[t] = y[t-1]).")
 
-table = doc.add_table(rows=4, cols=5, style='Light Grid Accent 1')
+table = doc.add_table(rows=5, cols=5, style='Light Grid Accent 1')
 table.alignment = WD_TABLE_ALIGNMENT.CENTER
 headers = ['Model', 'MSE', 'RMSE (W)', 'MAE (W)', 'R2']
 data = [
-    ['ARIMA(2,1,2)', '2,370.01', '48.68', '32.75', '0.876'],
-    ['LSTM (3-layer)', '15,436.04', '124.24', '93.59', '0.193'],
-    ['FB-Prophet',    '18,851.52', '137.30', '111.70', '0.015'],
+    ['Persistence',    '2,426.76', '49.26', '33.51', '0.873'],
+    ['ARIMA(2,1,2)',   '2,370.01', '48.68', '32.75', '0.876'],
+    ['LSTM (3-layer)', '4,821.35', '69.44', '52.25', '0.748'],
+    ['FB-Prophet',     '18,851.52', '137.30', '111.70', '0.015'],
 ]
 for i, h in enumerate(headers):
     c = table.rows[0].cells[i]
@@ -534,61 +561,200 @@ add_figure("iteration_timeline.png",
 doc.add_page_break()
 
 # ============================================================
+# 5.5 STATISTICAL SIGNIFICANCE
+# ============================================================
+add_heading("5.5 Statistical Significance: Diebold-Mariano Test", level=2)
+add_para(
+    "The pairwise Diebold-Mariano test on House 2 returns the values in Table 2. Three findings "
+    "are worth flagging. First, ARIMA's apparent win over Persistence is not statistically "
+    "significant at any conventional level (p = 0.665). The two models produce essentially "
+    "indistinguishable forecasts on this test set. Second, both LSTM and Prophet are "
+    "significantly worse than Persistence (p < 0.001 in both cases): adding model complexity "
+    "actively harms accuracy here. Third, ARIMA does significantly beat LSTM and Prophet "
+    "(p < 0.001 for both), so it is a reasonable choice when the alternatives are LSTM or Prophet, "
+    "but a one-line lag-1 rule is just as good."
+)
+
+add_table_caption("Table 2. Diebold-Mariano test results on House 2 with the Harvey-Leybourne-"
+                  "Newbold small-sample correction. n = 123 test days, two-sided p-values.")
+
+table2 = doc.add_table(rows=6, cols=4, style='Light Grid Accent 1')
+table2.alignment = WD_TABLE_ALIGNMENT.CENTER
+dm_headers = ['Comparison (Model 1 vs Model 2)', 'DM Statistic', 'p-value', 'Conclusion']
+dm_data = [
+    ['ARIMA vs Persistence',  '-0.433',  '0.665',     'No significant difference'],
+    ['LSTM vs Persistence',   '+3.936',  '< 0.001',   'Persistence significantly better'],
+    ['Prophet vs Persistence','+7.949',  '< 0.001',   'Persistence significantly better'],
+    ['ARIMA vs LSTM',         '-3.765',  '< 0.001',   'ARIMA significantly better'],
+    ['ARIMA vs Prophet',      '-7.957',  '< 0.001',   'ARIMA significantly better'],
+]
+for i, h in enumerate(dm_headers):
+    c = table2.rows[0].cells[i]
+    c.text = h
+    for p in c.paragraphs:
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        for r in p.runs:
+            r.bold = True
+            r.font.size = Pt(10)
+            r.font.name = 'Calibri'
+for r_idx, row in enumerate(dm_data):
+    for c_idx, v in enumerate(row):
+        c = table2.rows[r_idx + 1].cells[c_idx]
+        c.text = v
+        for p in c.paragraphs:
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            for r in p.runs:
+                r.font.size = Pt(10)
+                r.font.name = 'Calibri'
+
+doc.add_paragraph()
+
+add_figure("dm_test_plot.png",
+           "Figure 11. Diebold-Mariano statistics for House 2. Green bars are significant at the "
+           "5 percent level (|DM| > 1.96); grey bars are not. The ARIMA versus Persistence "
+           "comparison is the only non-significant pair.",
+           width=Inches(6.0))
+
+# ============================================================
+# 5.6 CROSS-HOUSE VALIDATION
+# ============================================================
+add_heading("5.6 Cross-House Validation", level=2)
+add_para(
+    "To check that the House 2 ranking is not an artefact of one household, we repeated the "
+    "entire pipeline on House 1 and House 5. These two homes have different occupancies and "
+    "appliance mixes (House 1 has freezers and a tumble dryer dominating the load, House 5 has a "
+    "much higher mean daily power), so any ranking that survives across all three is unlikely to "
+    "be a fluke. Table 3 reports the per-house R2 values."
+)
+
+add_table_caption("Table 3. R2 of each model across three REFIT households. Persistence is "
+                  "the trivial baseline; ARIMA wins narrowly on every house, while LSTM and "
+                  "Prophet underperform persistence consistently.")
+
+table3 = doc.add_table(rows=5, cols=5, style='Light Grid Accent 1')
+table3.alignment = WD_TABLE_ALIGNMENT.CENTER
+ch_headers = ['Model', 'House 1', 'House 2', 'House 5', 'Verdict']
+ch_data = [
+    ['Persistence', '0.963', '0.873', '0.901', 'Strong baseline'],
+    ['ARIMA',       '0.976', '0.876', '0.905', 'Best on every house'],
+    ['LSTM',        '0.859', '0.748', '0.647', 'Below persistence on every house'],
+    ['FB-Prophet',  '-2.315', '0.015', '-1.186', 'Often negative R2'],
+]
+for i, h in enumerate(ch_headers):
+    c = table3.rows[0].cells[i]
+    c.text = h
+    for p in c.paragraphs:
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        for r in p.runs:
+            r.bold = True
+            r.font.size = Pt(10)
+            r.font.name = 'Calibri'
+for r_idx, row in enumerate(ch_data):
+    for c_idx, v in enumerate(row):
+        c = table3.rows[r_idx + 1].cells[c_idx]
+        c.text = v
+        for p in c.paragraphs:
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            for r in p.runs:
+                r.font.size = Pt(10)
+                r.font.name = 'Calibri'
+
+doc.add_paragraph()
+
+add_figure("cross_house_comparison.png",
+           "Figure 12. Cross-house R2 by model. The ARIMA versus Persistence gap stays small on "
+           "all three houses, LSTM is consistently below Persistence, and Prophet produces "
+           "negative R2 on House 1 and House 5.",
+           width=Inches(6.3))
+
+add_para(
+    "Two findings carry forward. First, the ARIMA-Persistence gap is small on every house, so the "
+    "House 2 result is not unusual. Second, Prophet's R2 is negative on two of the three houses, "
+    "indicating that it predicts worse than the unconditional mean. This is a stronger statement "
+    "than the House 2 result alone suggested."
+)
+
+# ============================================================
+# 5.7 PRACTICAL INTERPRETATION
+# ============================================================
+add_heading("5.7 Practical Interpretation of the Errors", level=2)
+add_para(
+    "RMSE values are easier to understand once expressed in domain units. For House 2, the mean "
+    "test consumption is 434.8 W, so ARIMA's RMSE of 48.7 W is roughly 11.2 percent of the typical "
+    "daily level. Translated to energy, an average-power error of 48.7 W sustained over 24 hours "
+    "equals about 1.17 kWh per day. At the UK 2025 domestic electricity unit price of roughly "
+    "0.27 GBP per kWh, this is an expected billing error of about 0.32 GBP per day, or about "
+    "10 GBP per month for the single household. In an aggregator setting that prices day-ahead "
+    "imbalance at, say, 0.10 GBP per kWh, the cost falls to about 0.12 GBP per day. These are "
+    "small absolute numbers per household, but they scale linearly with portfolio size."
+)
+
+doc.add_page_break()
+
+# ============================================================
 # 6. DISCUSSION
 # ============================================================
 add_heading("6. Discussion", level=1)
 
-add_heading("6.1 Why ARIMA Wins", level=2)
+add_heading("6.1 The Persistence Result, and What It Tells Us", level=2)
 add_para(
-    "ARIMA's strong showing is driven by two factors. The first is data character: residential "
-    "energy at the daily level has strong autocorrelation at lag 1, so the previous day is by "
-    "far the most informative single feature for the current day. ARIMA(2, 1, 2) makes direct "
-    "use of this through its autoregressive and moving average terms. The second is the "
-    "forecasting protocol: every step is informed by the latest actual value, which keeps "
-    "ARIMA's predictions anchored even if its underlying parameters drift slightly over the "
-    "test window."
+    "The most important finding of this study is not that ARIMA beats the other models, but that "
+    "ARIMA barely beats persistence and the gap is not statistically significant. Persistence "
+    "predicts that tomorrow equals today: a one-line rule with zero learned parameters. On "
+    "House 2 it reaches R2 = 0.873, only 0.003 below ARIMA's 0.876. The Diebold-Mariano test "
+    "(p = 0.665) confirms that the two models have indistinguishable squared-error losses. "
+    "The cross-house results paint the same picture: ARIMA's R2 edge over Persistence is 0.013 "
+    "on House 1 and 0.004 on House 5."
+)
+add_para(
+    "The mechanical reason is the strong lag-1 autocorrelation of 7-day-smoothed daily "
+    "consumption. Yesterday is an excellent predictor of today, and any model that uses yesterday "
+    "directly will perform almost identically. ARIMA(2, 1, 2) adds two more lags and two moving-"
+    "average terms, but the extra information is small compared to lag-1. The practical implication "
+    "is clear: at this granularity and on this signal, do not deploy heavy machinery when a "
+    "one-line rule already captures the predictable structure."
 )
 
-add_heading("6.2 Why LSTM Underperforms", level=2)
+add_heading("6.2 Why LSTM Underperforms the Trivial Baseline", level=2)
 add_para(
-    "LSTM's modest score is not a verdict on deep learning, it is a comment on the data scale. "
-    "The training set contains 490 daily observations, which means only 476 input sequences "
-    "after the 14-day lookback. Deep learning architectures with around 129,000 parameters "
-    "typically need orders of magnitude more samples to reach their full potential. The "
-    "training and validation curves in Figure 8 confirm that the model has converged but has "
-    "not generalised well. Recent work (Gasparin and others, 2024) reports a similar pattern: "
-    "below six months of training data, simple baselines beat deep models, and only with nine "
-    "or more months do the deep architectures start to pull ahead."
+    "LSTM not only loses to ARIMA, it loses significantly to Persistence (p < 0.001 on House 2, "
+    "and a similar pattern on the other two houses). This is the more damning result: a 128,929-"
+    "parameter neural network is worse than predicting that tomorrow equals today. The training "
+    "set contains 490 daily observations, which gives only 476 input sequences after the 14-day "
+    "lookback. With this little data, the network has too much capacity, learns smooth average "
+    "behaviour, and oversmooths the day-to-day movements that Persistence captures exactly by "
+    "construction. Recent work (Gasparin and others, 2024) reports a similar pattern: below six "
+    "months of training data, simple baselines beat deep models. Our data is longer but the "
+    "smoothed daily signal apparently still falls in the regime where deep learning is a net "
+    "negative."
 )
 
 add_heading("6.3 Why Prophet Looks the Worst", level=2)
 add_para(
-    "Prophet's near-zero R2 deserves careful interpretation. Two factors are at play. First, "
-    "Prophet produces a single multi-step forecast for the entire 122-day horizon, with no "
-    "access to test actuals, which puts it at a structural disadvantage against the rolling "
-    "ARIMA and LSTM setups. Second, Prophet's strength lies in capturing slow seasonal trends "
-    "and calendar effects, both of which are present but neither is the dominant driver of "
-    "House 2 daily consumption. The residual day-to-day variation, which represents most of the "
-    "test-set variance, is precisely the component Prophet does not try to model."
-)
-add_para(
-    "The takeaway is not that Prophet is a weak model, but that the comparison rules favour "
-    "models that can use teacher forcing. A fair comparison on this dataset would also run "
-    "Prophet in a rolling refit mode, which we leave for future work because it requires roughly "
-    "two orders of magnitude more compute."
+    "Prophet's near-zero R2 on House 2 was not encouraging. Cross-house validation makes the "
+    "picture worse: R2 = -2.315 on House 1 and -1.186 on House 5, meaning Prophet predicts "
+    "considerably worse than the unconditional training mean. Two factors are at play. First, "
+    "Prophet produces a single multi-step forecast for the entire test horizon with no access "
+    "to test actuals, which puts it at a structural disadvantage against the rolling Persistence, "
+    "ARIMA, and LSTM setups. Second, Prophet's strength lies in capturing slow seasonal trends "
+    "and calendar effects; on smoothed daily residential data the dominant signal is the "
+    "previous day, which Prophet's decomposition does not target. A fair comparison would also "
+    "run Prophet in a rolling refit mode, but the structural mismatch with the data character "
+    "would remain."
 )
 
 add_heading("6.4 Limitations and Threats to Validity", level=2)
 add_para(
     "Three limitations qualify our conclusions."
 )
-add_bullet("Single household. House 2 may not be representative of the other 19 REFIT homes, "
-           "and the rankings could shift on a different occupancy or appliance mix.")
+add_bullet("Three households, not twenty. Cross-house validation strengthens the original "
+           "single-house finding but does not yet test on all 17 remaining REFIT homes.")
 add_bullet("Univariate setup. None of the models receive weather, calendar, or appliance-level "
-           "exogenous data. Adding these would likely close the gap, particularly for LSTM.")
+           "exogenous data. Adding these could shift the picture, particularly for LSTM, which is "
+           "designed to absorb richer inputs.")
 add_bullet("Heavy smoothing. The 7-day rolling mean removes much of the high-frequency content. "
            "An operational forecaster who needs daily ramping information would have to revisit "
-           "this choice.")
+           "this choice, and the persistence advantage may shrink at finer time scales.")
 
 add_heading("6.5 Comparison with Reference Literature", level=2)
 add_para(
@@ -608,24 +774,34 @@ add_para(
 add_heading("7. Conclusion and Future Work", level=1)
 
 add_para(
-    "We built a reproducible pipeline that forecasts the daily mean power consumption of a "
-    "single UK household using three time series methods. Under a rolling one-step-ahead "
-    "protocol and a fixed random seed, ARIMA(2, 1, 2) reached R2 = 0.876 on 122 unseen days, "
-    "outperforming a three-layer LSTM (R2 = 0.193) and FB-Prophet (R2 = 0.015). The lessons we "
-    "carry forward are that the forecasting protocol can dominate model choice for short series, "
-    "that residential daily energy has strong lag-one autocorrelation that classical models "
-    "exploit naturally, and that deep architectures require substantially more data than was "
-    "available here."
+    "We built a reproducible pipeline that forecasts the daily mean power consumption of three "
+    "UK households using four methods, including a persistence baseline. Under a rolling one-"
+    "step-ahead protocol and a fixed random seed, ARIMA(2, 1, 2) was the best model on every "
+    "house, but its margin over a one-line persistence rule was not statistically significant "
+    "(Diebold-Mariano p = 0.665 on House 2 and similarly small differences on Houses 1 and 5). "
+    "LSTM and FB-Prophet both lost significantly to persistence in all three settings, with "
+    "Prophet producing negative R2 on two of the three houses. The lesson we carry forward is "
+    "that residential daily energy at this granularity is dominated by lag-1 autocorrelation, "
+    "and that adding model capacity over a trivial baseline produces no measurable gain (ARIMA) "
+    "or actively hurts (LSTM, Prophet)."
+)
+
+add_para(
+    "The methodological lesson is just as important: reporting only complex models against each "
+    "other can hide the fact that the entire model class is unnecessary. A persistence baseline "
+    "and a Diebold-Mariano significance test together turn what looked like a clean ARIMA win "
+    "into a more honest 'the data is too predictable for the models to matter' result."
 )
 
 add_para(
     "Four directions stand out for further work."
 )
-add_bullet("Extending the rolling protocol to Prophet for a fair multi-model comparison.")
+add_bullet("Repeating the analysis on a higher-frequency target (hourly or 15-minute) where "
+           "lag-1 autocorrelation is weaker and the deep models may genuinely add value.")
 add_bullet("Adding weather (temperature, irradiance) and calendar features through SARIMAX and "
-           "multivariate LSTM.")
-add_bullet("Cross-household transfer learning across all 20 REFIT homes to amortise the deep "
-           "learning training cost.")
+           "multivariate LSTM, which give the heavier models information persistence cannot use.")
+add_bullet("Extending the cross-house comparison from three to all 20 REFIT homes, and exploring "
+           "cross-household transfer learning.")
 add_bullet("Hybrid models such as STL-Prophet-LSTM and CNN-LSTM-Transformer that combine the "
            "strengths of decomposition and neural sequence learning.")
 

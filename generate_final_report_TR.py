@@ -193,7 +193,26 @@ doc.add_page_break()
 # ============================================================
 add_heading("Ozet", level=1)
 add_para(
-    "Bu rapor, hane halki enerji tuketimi tahmininde kullanilan uc zaman serisi modelinin karsilastirmali bir incelemesini sunmaktadir: ARIMA, Long Short-Term Memory (LSTM) ve FB-Prophet. REFIT Akilli Ev veri setindeki 2 numarali hanenin 22 aylik 8 saniye cozunurluklu olcumlerini kullaniyoruz. Veriler gunluk ortalama gucu uretecek sekilde yeniden orneklenir, ardindan 7 gunluk hareketli ortalama ile yumusatilir ve son olarak yuzde 80 egitim, yuzde 20 test olacak sekilde zaman sirasinda bolunur. ARIMA modeli ADF duraganlik testi ve AIC olcutune gore (p, d, q) izgara aramasi ile ayarlanir, ardindan tek adim onde yuvarlanan tahmin protokolu altinda calistirilir. LSTM modeli uc katmanli yiginlanmis RNN mimarisinden olusur ve erken durdurma ile 100 epoch egitilir. Prophet, haftalik ve yillik mevsimsellik bilesenleriyle tek seferlik cok adim tahmin modunda kullanilir. ARIMA en yuksek dogrulugu yakalar (R2 = 0.876, RMSE = 48.7 W), LSTM ikinci sirada (R2 = 0.193) ve Prophet ucuncu sirada (R2 = 0.015) yer alir. ARIMA ile diger iki model arasindaki buyuk fark, kismen tahmin protokolune baglidir: ARIMA ve LSTM ogretmen zorlamasindan yararlanir, Prophet ise 122 gunluk tahmin ufkuna tek seferde baglanmak zorundadir. Sonuclar literaturde sik karsilasilan goruslerle ortusur: klasik istatistiksel modeller kisa ufuklu konut tuketimi tahmininde rekabetci kalmaya devam eder, derin ogrenmenin kazanci ise veri olcegine ve karsilastirma protokolune kosulludur. Sabit rastgele tohum kullanilan tum kod tabani bu rapora eslik etmektedir."
+    "Bu rapor, REFIT Akilli Ev veri setinden hane halki enerji tuketimine uygulanan dort zaman "
+    "serisi tahmin yaklasiminin karsilastirmali bir incelemesini sunmaktadir. Uc Birlesik Krallik "
+    "hanesinden (Ev 1, Ev 2 ve Ev 5) 22 aylik 8 saniye cozunurluklu olcumleri kullaniyoruz; "
+    "verileri gunluk ortalama gucu uretecek sekilde yeniden orneklenir, ardindan 7 gunluk hareketli "
+    "ortalama ile yumusatilir ve her seri yuzde 80 egitim, yuzde 20 test olacak sekilde zaman "
+    "sirasinda bolunur. Uc aday modelin (ARIMA, Long Short-Term Memory (LSTM) ve FB-Prophet) yani "
+    "sira saglik kontrolu olarak persistence temel modeli (y_hat[t] = y[t-1]) ekledik. ARIMA modeli "
+    "ADF duraganlik testi ve AIC izgara aramasi ile ayarlanir, ardindan tek adim onde yuvarlanan "
+    "tahmin protokolu altinda calistirilir; LSTM uc katmanli yiginlanmis RNN mimarisi kullanir; "
+    "Prophet haftalik ve yillik mevsimsellik bilesenleriyle tek seferlik cok adim modunda calisir. "
+    "Ev 2 de ARIMA(2, 1, 2) R2 = 0.876 ve RMSE = 48.7 W e ulasir, ancak Diebold-Mariano testi "
+    "persistence temel modeli (R2 = 0.873) uzerindeki marjinin istatistiksel olarak anlamli "
+    "olmadigini gosterir (p = 0.665). LSTM (R2 = 0.748) ve Prophet (R2 = 0.015) persistence e "
+    "anlamli olarak kaybeder (her ikisinde de p < 0.001). Ayni oruntu Ev 1 ve Ev 5 te de tekrarlanir: "
+    "ARIMA dar bir farkla kazanir, ancak persistence uzerine cok az sey ekler; LSTM ve Prophet ise "
+    "tutarli olarak temel modelin altinda kalir. Baslica ders, yumusatilmis gunluk konut tuketiminin "
+    "gecikme-1 otokorelasyonu tarafindan domine edildigi; bu nedenle tek satirlik bir kuralin "
+    "neredeyse tum tahmin edilebilir yapiyi yakaladigidir. Daha agir makineler ancak daha guclu "
+    "disasal girdiler veya daha ince granulariteli hedefler bu otokorelasyonu kirdiginda dogrulanir. "
+    "Sabit rastgele tohum kullanilan tum kod tabani bu rapora eslik etmektedir."
 )
 
 doc.add_page_break()
@@ -307,9 +326,31 @@ add_figure("rolling_forecast.png",
            "dayanarak test ufkunun tamamina taahhut eder.",
            width=Inches(6.3))
 
-add_heading("3.5 Degerlendirme Metrikleri", level=2)
+add_heading("3.5 Persistence Temel Modeli", level=2)
+add_para(
+    "Karmasik bir modelin gercekten faydali oldugunu iddia etmeden once, en basit alternatifi "
+    "yenebildigini gostermemiz gerekir. Bu nedenle, bir sonraki gunun bir onceki gunun gercek "
+    "degerine esit oldugu tahminini (y_hat[t] = y[t-1]) uretmesi icin persistence (yapiskanlik) "
+    "temel modeli ekledik. Bu, zaman serisi tahmininde kanonik bir saglik kontrolu modelidir. "
+    "Persistence'i yenemeyen herhangi bir model, tek satirlik bir kuralin yakaladigindan fazla "
+    "bir sey ogrenmemis demektir. Persistence, ARIMA ve LSTM ile ayni yuvarlanan protokol "
+    "altinda calisir: bir sonraki gunu tahmin ederken bir onceki gunun gercek degeri her zaman "
+    "elimizdedir."
+)
+
+add_heading("3.6 Degerlendirme Metrikleri", level=2)
 add_para(
     "Tahmin dogrulugu birbirini tamamlayan dort metrikle olculur. Ortalama Karesel Hata (MSE) ve Karekok Ortalama Karesel Hata (RMSE) buyuk hatalari agir bicimde cezalandirir; RMSE ozgun birim olan Watt cinsinden raporlanir. Ortalama Mutlak Hata (MAE) aykiri degerlere daha dayaniklidir ve yine Watt cinsindendir. Belirleme katsayisi (R2), aciklanan varyansin birimsiz olcumudur; 1 mukemmel tahmini, ortalama temel modelinin altinda kalan modeller icin negatif degerleri ifade eder."
+)
+
+add_heading("3.7 Diebold-Mariano Testi ile Istatistiksel Anlamlilik", level=2)
+add_para(
+    "RMSE veya R2 nin noktasal degerleri, bir modelin digerinden gercekten daha iyi olup olmadigini "
+    "gizleyebilir. Bu nedenle Harvey-Leybourne-Newbold kucuk orneklem duzeltmesiyle Diebold-Mariano "
+    "(DM) esit tahmin dogrulugu testini kullaniyoruz. Bos hipotez, iki rakip modelin beklenen "
+    "karesel hata kaybinin esit oldugudur; negatif DM istatistigi birinci modeli, pozitif olan "
+    "ikinci modeli destekler. Ilgilenilen tum ikili karsilastirmalar icin iki tarafli p-degerlerini "
+    "raporluyoruz."
 )
 
 doc.add_page_break()
@@ -342,18 +383,26 @@ add_heading("5. Sonuclar", level=1)
 
 add_heading("5.1 Nihai Performans Karsilastirmasi", level=2)
 add_para(
-    "Tablo 1, test seti uzerinde uc model icin elde edilen metrikleri raporlar. ARIMA dort metrigin tumunde acik bir farkla onde yer alir: R2 = 0.876 ile LSTM in yaklasik dort kati, Prophet in ise yaklasik altmis kati kadar. RMSE farki daha da carpicidir: ARIMA 48.7 W iken LSTM 124.2 W ve Prophet 137.3 W."
+    "Tablo 1, Ev 2 uzerinde persistence temel modeli ile uc adayin test seti metriklerini "
+    "raporlar. Bashlik sonuc: ARIMA(2, 1, 2) R2 = 0.876 ile kazanan, ancak onemsiz persistence "
+    "temel modelini (R2 = 0.873) yenmesi ucuncu ondalik basamakta. LSTM (R2 = 0.748) ve "
+    "FB-Prophet (R2 = 0.015) ikisi de persistence in altinda kalir. Sonucu, Bolum 5.5 te "
+    "Diebold-Mariano testi ile ayrintili olarak inceleyecegiz, ama sezgisel cikarim su: gunluk "
+    "konut enerjisindeki gecikme-1 otokorelasyonu butun isi yapiyor; ARIMA bunu temiz bicimde "
+    "yakalarken, LSTM ve Prophet bu yapiyi kuramiyor."
 )
 
-add_table_caption("Tablo 1. Ev 2 gunluk tahminleri icin uc modelin test seti performansi.")
+add_table_caption("Tablo 1. Ev 2 gunluk tahminleri icin persistence temel modeli (y_hat[t] = "
+                  "y[t-1]) dahil dort yaklasimin test seti performansi.")
 
-table = doc.add_table(rows=4, cols=5, style='Light Grid Accent 1')
+table = doc.add_table(rows=5, cols=5, style='Light Grid Accent 1')
 table.alignment = WD_TABLE_ALIGNMENT.CENTER
 headers = ['Model', 'MSE', 'RMSE (W)', 'MAE (W)', 'R2']
 data = [
-    ['ARIMA(2,1,2)', '2,370.01', '48.68', '32.75', '0.876'],
-    ['LSTM (3-layer)', '15,436.04', '124.24', '93.59', '0.193'],
-    ['FB-Prophet',    '18,851.52', '137.30', '111.70', '0.015'],
+    ['Persistence',    '2,426.76', '49.26', '33.51', '0.873'],
+    ['ARIMA(2,1,2)',   '2,370.01', '48.68', '32.75', '0.876'],
+    ['LSTM (3-layer)', '4,821.35', '69.44', '52.25', '0.748'],
+    ['FB-Prophet',     '18,851.52', '137.30', '111.70', '0.015'],
 ]
 for i, h in enumerate(headers):
     c = table.rows[0].cells[i]
@@ -423,35 +472,196 @@ add_figure("iteration_timeline.png",
 doc.add_page_break()
 
 # ============================================================
+# 5.5 STATISTICAL SIGNIFICANCE (TR)
+# ============================================================
+add_heading("5.5 Istatistiksel Anlamlilik: Diebold-Mariano Testi", level=2)
+add_para(
+    "Ev 2 uzerinde yapilan ikili Diebold-Mariano testleri Tablo 2 deki sonuclari verir. "
+    "Uc bulgu one cikiyor. Birincisi, ARIMA nin Persistence uzerindeki gozle gorulen ustunlugu "
+    "geleneksel hicbir seviyede istatistiksel olarak anlamli degil (p = 0.665). Iki model bu test "
+    "setinde pratik olarak ayirt edilemeyen tahminler uretiyor. Ikincisi, LSTM ve Prophet "
+    "Persistence den anlamli sekilde daha kotu (her ikisinde de p < 0.001): model karmasikligini "
+    "artirmak burada dogrulugu aktif olarak zedeliyor. Ucuncusu, ARIMA LSTM ve Prophet i anlamli "
+    "olarak yener (her ikisinde p < 0.001); yani secenek LSTM veya Prophet ise ARIMA mantikli bir "
+    "tercih, ancak tek satirlik bir gecikme-1 kurali da ayni isi yapar."
+)
+
+add_table_caption("Tablo 2. Ev 2 icin Harvey-Leybourne-Newbold kucuk orneklem duzeltmesiyle "
+                  "Diebold-Mariano test sonuclari. n = 123 test gunu, iki tarafli p-degerleri.")
+
+table2 = doc.add_table(rows=6, cols=4, style='Light Grid Accent 1')
+table2.alignment = WD_TABLE_ALIGNMENT.CENTER
+dm_headers = ['Karsilastirma (Model 1 vs Model 2)', 'DM Istatistigi', 'p-degeri', 'Sonuc']
+dm_data = [
+    ['ARIMA vs Persistence',  '-0.433',  '0.665',     'Anlamli fark yok'],
+    ['LSTM vs Persistence',   '+3.936',  '< 0.001',   'Persistence anlamli olarak iyi'],
+    ['Prophet vs Persistence','+7.949',  '< 0.001',   'Persistence anlamli olarak iyi'],
+    ['ARIMA vs LSTM',         '-3.765',  '< 0.001',   'ARIMA anlamli olarak iyi'],
+    ['ARIMA vs Prophet',      '-7.957',  '< 0.001',   'ARIMA anlamli olarak iyi'],
+]
+for i, h in enumerate(dm_headers):
+    c = table2.rows[0].cells[i]
+    c.text = h
+    for p in c.paragraphs:
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        for r in p.runs:
+            r.bold = True
+            r.font.size = Pt(10)
+            r.font.name = 'Calibri'
+for r_idx, row in enumerate(dm_data):
+    for c_idx, v in enumerate(row):
+        c = table2.rows[r_idx + 1].cells[c_idx]
+        c.text = v
+        for p in c.paragraphs:
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            for r in p.runs:
+                r.font.size = Pt(10)
+                r.font.name = 'Calibri'
+
+doc.add_paragraph()
+
+add_figure("dm_test_plot.png",
+           "Sekil 11. Ev 2 icin Diebold-Mariano istatistikleri. Yesil cubuklar yuzde 5 seviyesinde "
+           "anlamli (|DM| > 1.96), gri cubuklar anlamli degil. ARIMA ile Persistence "
+           "karsilastirmasi anlamli olmayan tek ciftir.",
+           width=Inches(6.0))
+
+# ============================================================
+# 5.6 CROSS-HOUSE VALIDATION (TR)
+# ============================================================
+add_heading("5.6 Hane-Asiri Dogrulama", level=2)
+add_para(
+    "Ev 2 deki sira lamasinin tek bir hanenin tesadufu olmadigini gostermek icin tum boru hattini "
+    "Ev 1 ve Ev 5 te tekrarladik. Bu iki ev farkli kullanim duzeni ve cihaz karisimina sahip "
+    "(Ev 1 de dondurucular ve kurutucu, Ev 5 te belirgin sekilde daha yuksek gunluk ortalama guc "
+    "bulunuyor); dolayisiyla uc evde de ayakta kalan herhangi bir siralama tesadufi olamaz. "
+    "Tablo 3, hane basina R2 degerlerini sunar."
+)
+
+add_table_caption("Tablo 3. Uc REFIT hanesinde model basina R2. Persistence onemsiz temel "
+                  "modeldir; ARIMA her evde dar bir farkla kazanir, LSTM ve Prophet ise tutarli "
+                  "sekilde Persistence in altinda kalir.")
+
+table3 = doc.add_table(rows=5, cols=5, style='Light Grid Accent 1')
+table3.alignment = WD_TABLE_ALIGNMENT.CENTER
+ch_headers = ['Model', 'Ev 1', 'Ev 2', 'Ev 5', 'Yargi']
+ch_data = [
+    ['Persistence', '0.963', '0.873', '0.901', 'Guclu temel model'],
+    ['ARIMA',       '0.976', '0.876', '0.905', 'Her evde en iyi'],
+    ['LSTM',        '0.859', '0.748', '0.647', 'Her evde Persistence altinda'],
+    ['FB-Prophet',  '-2.315', '0.015', '-1.186', 'Sik sik negatif R2'],
+]
+for i, h in enumerate(ch_headers):
+    c = table3.rows[0].cells[i]
+    c.text = h
+    for p in c.paragraphs:
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        for r in p.runs:
+            r.bold = True
+            r.font.size = Pt(10)
+            r.font.name = 'Calibri'
+for r_idx, row in enumerate(ch_data):
+    for c_idx, v in enumerate(row):
+        c = table3.rows[r_idx + 1].cells[c_idx]
+        c.text = v
+        for p in c.paragraphs:
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            for r in p.runs:
+                r.font.size = Pt(10)
+                r.font.name = 'Calibri'
+
+doc.add_paragraph()
+
+add_figure("cross_house_comparison.png",
+           "Sekil 12. Hane basina model R2 si. ARIMA ile Persistence arasindaki fark uc evde de "
+           "kucuk, LSTM tutarli sekilde Persistence in altinda, Prophet Ev 1 ve Ev 5 te negatif "
+           "R2 uretiyor.",
+           width=Inches(6.3))
+
+add_para(
+    "Iki bulgu burada vurgulanmali. Birincisi, ARIMA ile Persistence arasindaki fark her evde "
+    "kucuk; yani Ev 2 sonucu sira disi degil. Ikincisi, Prophet uc evden ikisinde negatif R2 "
+    "ureterek koshulsuz ortalamadan bile daha kotu tahmin ediyor; bu, tek hane bulgusundan daha "
+    "guclu bir ifade."
+)
+
+# ============================================================
+# 5.7 PRACTICAL INTERPRETATION (TR)
+# ============================================================
+add_heading("5.7 Hata Degerlerinin Pratik Yorumu", level=2)
+add_para(
+    "RMSE degerleri, alan birimlerine cevrildiginde daha kolay anlasilir. Ev 2 icin ortalama test "
+    "tuketimi 434.8 W, yani ARIMA nin 48.7 W luk RMSE si tipik gunluk seviyenin yaklasik yuzde "
+    "11.2 sine denk gelir. Enerji cinsine cevrildiginde, 24 saat boyunca surdurulen 48.7 W luk "
+    "ortalama-guc hatasi yaklasik 1.17 kWh/gun eder. Birlesik Krallik 2025 konut elektrik birim "
+    "fiyati yaklasik 0.27 GBP/kWh oldugunda, bu tek hane icin yaklasik 0.32 GBP/gun beklenen "
+    "faturalama hatasi anlamina gelir; aylik yaklasik 10 GBP. Toplulastirilmis bir bilanco "
+    "ortaminda gun-onceki dengesizlik 0.10 GBP/kWh fiyatlandirildiginda maliyet yaklasik "
+    "0.12 GBP/gun e duser. Bu sayilar hane basina kucuk olsa da portfoy buyuklugu ile dogrusal "
+    "olarak olceklenir."
+)
+
+# ============================================================
 # 6. DISCUSSION
 # ============================================================
 add_heading("6. Tartisma", level=1)
 
-add_heading("6.1 ARIMA Neden En Iyi Sonucu Verdi", level=2)
+add_heading("6.1 Persistence Sonucu ve Bize Soyledigi", level=2)
 add_para(
-    "ARIMA nin guclu performansi iki etkenle aciklanir. Birincisi veri karakteridir: gunluk duzeyde konut enerjisi gecikme 1 de guclu otokorelasyon gosterir, dolayisiyla bir onceki gun bugunki tahmin icin tek basina en bilgilendirici ozelliktir. ARIMA(2, 1, 2) bu ozellige otoregresif ve hareketli ortalama terimleri uzerinden dogrudan basvurur. Ikincisi tahmin protokoludur: her adim en yeni gercek degere dayanir; bu durum, modelin parametreleri test penceresinde hafifce kayisa bile tahminleri sabit tutar."
+    "Bu calismanin en onemli bulgusu ARIMA nin diger modelleri yenmesi degil, ARIMA nin persistence i "
+    "ancak duz duz yenmesi ve farkin istatistiksel olarak anlamli olmamasidir. Persistence yarinin "
+    "bugune esit oldugunu tahmin eder: hicbir ogrenilmis parametresi olmayan tek satirlik bir kural. "
+    "Ev 2 de R2 = 0.873 e ulasiyor, ARIMA nin 0.876 sindan sadece 0.003 dusuk. Diebold-Mariano testi "
+    "(p = 0.665) iki modelin karesel hata kayiplarinin ayirt edilemez oldugunu dogrular. Hane-asiri "
+    "sonuclar ayni resmi cizer: ARIMA nin Persistence uzerindeki R2 farki Ev 1 de 0.013, Ev 5 te 0.004."
+)
+add_para(
+    "Mekanik neden, 7 gunluk yumusatilmis gunluk tuketiminin guclu gecikme-1 otokorelasyonudur. "
+    "Dun bugunu mukemmel sekilde tahmin eder ve dunu dogrudan kullanan herhangi bir model neredeyse "
+    "ayni performansi gosterir. ARIMA(2, 1, 2) iki gecikme daha ve iki hareketli-ortalama terimi "
+    "ekler, ancak ek bilgi gecikme-1 e kiyasla kucuktur. Pratik sonuc net: bu granulariteyde ve "
+    "bu sinyal uzerinde, tek satirlik bir kural zaten oraddatahmin edilebilir yapiyi yakaliyorken "
+    "agir makineler kullanmayin."
 )
 
-add_heading("6.2 LSTM Neden Beklenenden Dusuk Performans Gosterdi", level=2)
+add_heading("6.2 LSTM Neden Onemsiz Temel Modelden de Dusuk Performans Gosterdi", level=2)
 add_para(
-    "LSTM in mutevazi skoru derin ogrenme aleyhine bir hukum degildir; veri olcegi hakkinda bir yorumdur. Egitim seti 490 gunluk gozlemden olusur ve 14 gunluk geriye bakis ile birlikte yalnizca 476 girdi dizisi anlamina gelir. Yaklasik 129 bin parametreye sahip derin ogrenme mimarileri tam potansiyellerine ulasmak icin tipik olarak buyuklukler mertebesinde daha fazla orneklem ister. Sekil 8 deki egitim ve dogrulama egrileri modelin yakinsadigini ancak iyi genellestiremedigini gosterir. Son donem calismalari (Gasparin ve digerleri, 2024) benzer bir oruntuyu belgeler: alti aydan kisa egitim verisinde basit temel modeller derin modelleri geride birakir; ancak dokuz ay veya daha uzun veriyle derin mimariler one gecmeye baslar."
+    "LSTM yalnizca ARIMA ya kaybetmiyor, Persistence e karsi da anlamli sekilde kaybediyor (Ev 2 de "
+    "p < 0.001, diger iki evde benzer oruntu). Bu daha agir bir sonuc: 128.929 parametreli sinir agi, "
+    "yarinin bugune esit olacagini tahmin etmekten daha kotu. Egitim seti 490 gunluk gozlemden olusur "
+    "ve 14 gunluk geriye bakis ile yalnizca 476 girdi dizisi verir. Bu kadar az veriyle ag asiri "
+    "kapasiteye sahip; yumusak ortalama davranisi ogreniyor ve Persistence in tanim geregi yakaladigi "
+    "gunden gune hareketleri asiri yumusatiyor. Son donem calismalari (Gasparin ve digerleri, 2024) "
+    "benzer oruntuyu belgeler: alti aydan kisa egitim verisinde basit temel modeller derin modelleri "
+    "geride birakir. Bizim verimiz daha uzun, ancak yumusatilmis gunluk sinyal hala derin ogrenmenin "
+    "net olarak negatif oldugu bolgede gorunuyor."
 )
 
 add_heading("6.3 Prophet Neden En Dusuk Skoru Aldi", level=2)
 add_para(
-    "Prophet in sifir civarindaki R2 si dikkatli yorumlanmalidir. Iki etken devrededir. Birincisi, Prophet tum 122 gunluk ufuk icin tek seferlik cok-adim tahmin uretir ve test seti gercek degerlerine erisemez; bu, yuvarlanan ARIMA ve LSTM kurulumlarina kiyasla onu yapisal olarak dezavantajli birakir. Ikincisi, Prophet in guclu yani yavas mevsimsel trendleri ve takvim etkilerini yakalamaktir; her iki ogeyi de Ev 2 verisinde gormek mumkun, ancak ikisi de tuketimin baskin surukleyicisi degildir. Test seti varyansinin buyuk kismini olusturan gunden gune kalan degiskenlik, tam olarak Prophet in modellemeye calismadigi bilesendir."
-)
-add_para(
-    "Cikarim, Prophet in zayif bir model olmasi degil, karsilastirma kurallarinin ogretmen zorlamasi yapabilen modelleri kayirmasidir. Bu veri seti uzerinde adil bir karsilastirma Prophet i de yuvarlanan yeniden uydurma modunda calistirmayi gerektirir; bunu yaklasik iki buyukluk mertebesinde fazla hesaplama gerektirdigi icin ileride yapilacak calismalar arasinda biraktik."
+    "Prophet in Ev 2 deki sifir civarindaki R2 si zaten cesaret kirici degildi. Hane-asiri dogrulama "
+    "resmi daha da kotulestiriyor: Ev 1 de R2 = -2.315 ve Ev 5 te R2 = -1.186, yani Prophet kosulsuz "
+    "egitim ortalamasindan onemli olcude daha kotu tahmin ediyor. Iki etken devrededir. Birincisi, "
+    "Prophet tum test ufkunu test seti gercek degerlerine erismeden tek seferde tahmin eder; bu, "
+    "yuvarlanan Persistence, ARIMA ve LSTM kurulumlarina kiyasla onu yapisal olarak dezavantajli "
+    "birakir. Ikincisi, Prophet in guclu yani yavas mevsimsel trendleri ve takvim etkilerini "
+    "yakalamaktir; yumusatilmis gunluk konut verisindeki baskin sinyal bir onceki gun olup Prophet in "
+    "ayristirmasinin hedeflemedigi bilesendir. Adil bir karsilastirma Prophet i yuvarlanan yeniden "
+    "uydurma modunda calistirmayi gerektirir, ancak veri karakteriyle yapisal uyumsuzluk yine kalir."
 )
 
 add_heading("6.4 Kisitlamalar ve Gecerlilik Tehditleri", level=2)
 add_para(
     "Uc kisitlama sonuclarimizi nitelendirir."
 )
-add_bullet("Tek hane. Ev 2 diger 19 REFIT evini temsil etmeyebilir; farkli bir kullanim duzeni veya cihaz karisiminda sira degisebilir.")
-add_bullet("Tek degiskenli kurulum. Modellerin hicbiri hava, takvim veya cihaz duzeyinde disasal veri almaz. Bunlarin eklenmesi farkin, ozellikle LSTM lehine, kapanmasini kolaylastiracaktir.")
-add_bullet("Agir yumusatma. 7 gunluk hareketli ortalama yuksek frekansli icerigi ortadan kaldirir. Gunluk rampa bilgisine ihtiyac duyan bir operasyonel tahminci icin bu secim yeniden gozden gecirilmelidir.")
+add_bullet("Yirmi degil, uc hane. Hane-asiri dogrulama orijinal tek-hane bulgusunu guclendirir, "
+           "ancak kalan 17 REFIT evini henuz test etmiyor.")
+add_bullet("Tek degiskenli kurulum. Modellerin hicbiri hava, takvim veya cihaz duzeyinde disasal "
+           "veri almaz. Bunlarin eklenmesi tabloyu, ozellikle daha zengin girdileri emmek icin "
+           "tasarlanan LSTM lehine, degistirebilir.")
+add_bullet("Agir yumusatma. 7 gunluk hareketli ortalama yuksek frekansli icerigi ortadan kaldirir. "
+           "Gunluk rampa bilgisine ihtiyac duyan bir operasyonel tahminci icin bu secim yeniden "
+           "gozden gecirilmelidir; persistence avantaji daha ince zaman olceklerinde kuculebilir.")
 
 add_heading("6.5 Referans Literatur ile Karsilastirma", level=2)
 add_para(
@@ -464,16 +674,35 @@ add_para(
 add_heading("7. Sonuc ve Gelecek Calismalar", level=1)
 
 add_para(
-    "Tek bir Birlesik Krallik hanesinin gunluk ortalama gucunu tahmin eden tekrar uretilebilir bir boru hatti kurduk ve uc zaman serisi yontemini kullandik. Yuvarlanan tek-adim-onde protokol ve sabit rastgele tohum altinda, ARIMA(2, 1, 2) 122 gorulmemis gun uzerinde R2 = 0.876 a ulasti; uc katmanli LSTM (R2 = 0.193) ve FB-Prophet (R2 = 0.015) modellerini geride birakti. Cikardigimiz dersler sunlardir: tahmin protokolu, kisa serilerde model secimini gectigi bir noktaya kadar baskindir; konut gunluk enerjisi, klasik modellerin dogal olarak yararlandigi gucludeli-1 otokorelasyon sergiler; ve derin mimariler burada elde edilenden onemli olcude fazla veri ister."
+    "Persistence temel modeli dahil dort yontem kullanilarak uc Birlesik Krallik hanesinin gunluk "
+    "ortalama gucunu tahmin eden tekrar uretilebilir bir boru hatti kurduk. Yuvarlanan tek-adim-onde "
+    "protokol ve sabit rastgele tohum altinda, ARIMA(2, 1, 2) her evde en iyi model oldu, ancak tek "
+    "satirlik persistence kurali uzerindeki marji istatistiksel olarak anlamli degildi (Ev 2 de "
+    "Diebold-Mariano p = 0.665 ve Ev 1 ile Ev 5 te benzer kucuk farklar). LSTM ve FB-Prophet uc "
+    "ortamin tumunde persistence e anlamli olarak kaybetti; Prophet uc evden ikisinde negatif R2 "
+    "uretti. Cikardigimiz ders, bu granulariteyde konut gunluk enerjisinin gecikme-1 otokorelasyonu "
+    "tarafindan domine edildigi ve onemsiz temel modelin uzerine model kapasitesi eklemenin olculebilir "
+    "kazanc saglamadigi (ARIMA) veya aktif olarak zararli oldugu (LSTM, Prophet) yonundedir."
+)
+
+add_para(
+    "Metodolojik ders de en az ayni kadar onemli: yalnizca karmasik modelleri birbirine karsi raporlamak, "
+    "tum model sinifinin gereksiz oldugu gercegini gizleyebilir. Persistence temel modeli ile Diebold-"
+    "Mariano anlamlilik testi birlikte, temiz bir ARIMA zaferi gibi gorunen sonucu daha durust 'veri "
+    "modellerin onemli olmasi icin fazla tahmin edilebilir' sonucuna donusturur."
 )
 
 add_para(
     "Ileride yapilacak calismalar icin dort yon one cikiyor."
 )
-add_bullet("Yuvarlanan protokolu Prophet a da uygulayarak adil bir cok model karsilastirmasi yapmak.")
-add_bullet("Hava (sicaklik, isinim) ve takvim ozelliklerini SARIMAX ve cok degiskenli LSTM araciligiyla eklemek.")
-add_bullet("Derin ogrenme egitim maliyetini paylasmak icin 20 REFIT hanesi arasinda hane-asiri transfer ogrenmesi yapmak.")
-add_bullet("Ayristirma ve sinirsel dizi ogrenmenin guclu yanlarini birlestiren STL-Prophet-LSTM ve CNN-LSTM-Transformer gibi hibrit modeller kurmak.")
+add_bullet("Gecikme-1 otokorelasyonunun daha zayif oldugu ve derin modellerin gercekten katki "
+           "saglayabilecegi daha yuksek frekansli hedefte (saatlik veya 15 dakikalik) analizi tekrarlamak.")
+add_bullet("Hava (sicaklik, isinim) ve takvim ozelliklerini SARIMAX ve cok degiskenli LSTM "
+           "araciligiyla eklemek; bu daha agir modellere persistence in kullanamayacagi bilgiyi verir.")
+add_bullet("Hane-asiri karsilastirmayi ucten tum 20 REFIT evine uzatmak ve hane-asiri transfer "
+           "ogrenmesini kesfetmek.")
+add_bullet("Ayristirma ve sinirsel dizi ogrenmenin guclu yanlarini birlestiren STL-Prophet-LSTM ve "
+           "CNN-LSTM-Transformer gibi hibrit modeller kurmak.")
 
 add_heading("Tekrarlanabilirlik Notu", level=2)
 add_para(
