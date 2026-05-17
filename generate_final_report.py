@@ -32,10 +32,16 @@ doc = Document()
 
 # Page setup
 for section in doc.sections:
-    section.top_margin = Cm(2.2)
-    section.bottom_margin = Cm(2.2)
-    section.left_margin = Cm(2.4)
-    section.right_margin = Cm(2.4)
+    section.top_margin = Cm(2.0)
+    section.bottom_margin = Cm(2.0)
+    section.left_margin = Cm(2.0)
+    section.right_margin = Cm(2.0)
+
+# Enable Word auto-hyphenation to avoid huge gaps in justified text
+settings_xml = doc.settings.element
+auto_h = OxmlElement('w:autoHyphenation')
+auto_h.set(qn('w:val'), 'true')
+settings_xml.append(auto_h)
 
 # Default style
 style = doc.styles['Normal']
