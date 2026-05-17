@@ -76,7 +76,7 @@ def make_pipeline_diagram():
 
     plt.tight_layout()
     out = os.path.join(RESULTS, 'pipeline_diagram.png')
-    plt.savefig(out, dpi=150, bbox_inches='tight', facecolor='white')
+    plt.savefig(out, dpi=150, bbox_inches='tight', pad_inches=0.3, facecolor='white')
     plt.close()
     print(f"Saved: {out}")
 
@@ -137,7 +137,7 @@ def make_lstm_diagram():
 
     plt.tight_layout()
     out = os.path.join(RESULTS, 'lstm_architecture.png')
-    plt.savefig(out, dpi=150, bbox_inches='tight', facecolor='white')
+    plt.savefig(out, dpi=150, bbox_inches='tight', pad_inches=0.3, facecolor='white')
     plt.close()
     print(f"Saved: {out}")
 
@@ -205,7 +205,7 @@ def make_rolling_diagram():
                  fontsize=14, fontweight='bold')
     plt.tight_layout()
     out = os.path.join(RESULTS, 'rolling_forecast.png')
-    plt.savefig(out, dpi=150, bbox_inches='tight', facecolor='white')
+    plt.savefig(out, dpi=150, bbox_inches='tight', pad_inches=0.3, facecolor='white')
     plt.close()
     print(f"Saved: {out}")
 
@@ -260,7 +260,7 @@ def make_iteration_timeline():
 
     plt.tight_layout()
     out = os.path.join(RESULTS, 'iteration_timeline.png')
-    plt.savefig(out, dpi=150, bbox_inches='tight', facecolor='white')
+    plt.savefig(out, dpi=150, bbox_inches='tight', pad_inches=0.3, facecolor='white')
     plt.close()
     print(f"Saved: {out}")
 

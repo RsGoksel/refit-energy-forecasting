@@ -34,7 +34,7 @@ plt.suptitle('Performance Metrics, House 2 (Persistence baseline included)',
              fontsize=14, fontweight='bold')
 plt.tight_layout()
 out = os.path.join(RESULTS, 'metrics_comparison.png')
-plt.savefig(out, dpi=150, bbox_inches='tight')
+plt.savefig(out, dpi=150, bbox_inches='tight', pad_inches=0.3)
 plt.close()
 print(f"Saved: {out}")
 
@@ -67,7 +67,7 @@ for i, (b, p) in enumerate(zip(bars, pvals)):
             f'p={p:.3f}', ha='center', fontsize=9)
 plt.tight_layout()
 out = os.path.join(RESULTS, 'dm_test_plot.png')
-plt.savefig(out, dpi=150, bbox_inches='tight')
+plt.savefig(out, dpi=150, bbox_inches='tight', pad_inches=0.3)
 plt.close()
 print(f"Saved: {out}")
 

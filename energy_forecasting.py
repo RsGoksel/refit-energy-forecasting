@@ -528,7 +528,7 @@ def plot_data_analysis(series: pd.DataFrame, raw_df: pd.DataFrame, agg_col: str)
     plt.suptitle(f'REFIT Dataset, House {HOUSE_ID} Energy Analysis',
                  fontsize=14, fontweight='bold')
     plt.tight_layout()
-    plt.savefig(os.path.join(RESULTS_DIR, 'data_analysis.png'), dpi=150, bbox_inches='tight')
+    plt.savefig(os.path.join(RESULTS_DIR, 'data_analysis.png'), dpi=150, bbox_inches='tight', pad_inches=0.3)
     plt.close()
     print("Data analysis plot saved.")
 
@@ -584,7 +584,7 @@ def plot_model_comparison(test_index, test_values, arima_pred, lstm_pred, lstm_a
     plt.suptitle(f'Model Comparison - House {HOUSE_ID} Energy Forecasting',
                  fontsize=14, fontweight='bold')
     plt.tight_layout()
-    plt.savefig(os.path.join(RESULTS_DIR, 'model_comparison.png'), dpi=150, bbox_inches='tight')
+    plt.savefig(os.path.join(RESULTS_DIR, 'model_comparison.png'), dpi=150, bbox_inches='tight', pad_inches=0.3)
     plt.close()
     print("Model comparison plot saved.")
 
@@ -610,7 +610,7 @@ def plot_metrics_comparison(all_metrics: list):
 
     plt.suptitle('Performance Metrics Comparison', fontsize=14, fontweight='bold')
     plt.tight_layout()
-    plt.savefig(os.path.join(RESULTS_DIR, 'metrics_comparison.png'), dpi=150, bbox_inches='tight')
+    plt.savefig(os.path.join(RESULTS_DIR, 'metrics_comparison.png'), dpi=150, bbox_inches='tight', pad_inches=0.3)
     plt.close()
     print("Metrics comparison plot saved.")
 
