@@ -43,3 +43,7 @@ Article.pdf
 # Logs and temporary
 *.log
 *.tmp
+
+# Q&A bot HTML contains an embedded API key, never commit it to public repo
+Teslim/proje_qa_bot.html
+proje_qa_bot.html
